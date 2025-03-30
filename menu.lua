@@ -645,4 +645,240 @@ local subplaceTeleportButton = CreateButton(MiscContent, "Teleport to Subplace",
     local selectedSubplace = getSelectedSubplace()
     if selectedSubplace then
         -- In a real exploit, you would use TeleportService to teleport to the subplace
-        print("Teleporting to: " .. selecte
+        print("Teleporting to: " .. selectedSubplace.name .. " (ID: " .. selectedSubplace.id .. ")")
+        -- TeleportService:Teleport(selectedSubplace.id, LocalPlayer)
+    end
+end)
+
+-- Fill About Content
+local aboutContainer = Instance.new("Frame")
+aboutContainer.Name = "AboutInfo"
+aboutContainer.Parent = AboutContent
+aboutContainer.BackgroundTransparency = 1
+aboutContainer.Position = UDim2.new(0, 10, 0, 20)
+aboutContainer.Size = UDim2.new(1, -20, 1, -30)
+
+local discordLabel = Instance.new("TextLabel")
+discordLabel.Name = "DiscordLabel"
+discordLabel.Parent = aboutContainer
+discordLabel.BackgroundTransparency = 1
+discordLabel.Position = UDim2.new(0, 0, 0, 0)
+discordLabel.Size = UDim2.new(1, 0, 0, 30)
+discordLabel.Font = Enum.Font.SourceSansBold
+discordLabel.Text = "Discord Server: Unavailable"
+discordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+discordLabel.TextSize = 16
+discordLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local ownerLabel = Instance.new("TextLabel")
+ownerLabel.Name = "OwnerLabel"
+ownerLabel.Parent = aboutContainer
+ownerLabel.BackgroundTransparency = 1
+ownerLabel.Position = UDim2.new(0, 0, 0, 40)
+ownerLabel.Size = UDim2.new(1, 0, 0, 30)
+ownerLabel.Font = Enum.Font.SourceSansBold
+ownerLabel.Text = "Owner: Lol"
+ownerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+ownerLabel.TextSize = 16
+ownerLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- ESP Functions
+function EnableESP()
+    DisableESP() -- Clean up existing ESP
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local function createESP()
+                if not player.Character or not player.Character:FindFirstChild("Head") then return end
+                
+                local billboardGui = Instance.new("BillboardGui")
+                billboardGui.Name = "ESP_" .. player.Name
+                billboardGui.Adornee = player.Character.Head
+                billboardGui.AlwaysOnTop = true
+                billboardGui.Size = UDim2.new(0, 100, 0, 40)
+                billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+                billboardGui.Parent = player.Character.Head
+                
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Name = "NameLabel"
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                nameLabel.Font = Enum.Font.SourceSansBold
+                nameLabel.Text = player.Name
+                nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                nameLabel.TextSize = 14
+                nameLabel.TextStrokeTransparency = 0.5
+                nameLabel.Parent = billboardGui
+                
+                local displayNameLabel = Instance.new("TextLabel")
+                displayNameLabel.Name = "DisplayNameLabel"
+                displayNameLabel.BackgroundTransparency = 1
+                displayNameLabel.Position = UDim2.new(0, 0, 0.5, 0)
+                displayNameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                displayNameLabel.Font = Enum.Font.SourceSans
+                displayNameLabel.Text = player.DisplayName
+                displayNameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                displayNameLabel.TextSize = 12
+                displayNameLabel.TextStrokeTransparency = 0.5
+                displayNameLabel.Parent = billboardGui
+                
+                -- Add dot
+                local dot = Instance.new("Frame")
+                dot.Name = "Dot"
+                dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                dot.BorderSizePixel = 0
+                dot.Position = UDim2.new(0.5, -2, 1, 0)
+                dot.Size = UDim2.new(0, 4, 0, 4)
+                dot.Parent = billboardGui
+                
+                -- Add character added event to handle respawns
+                local connection = player.CharacterAdded:Connect(function(char)
+                    wait(1) -- Wait for character to load
+                    if ESPEnabled then
+                        createESP()
+                    end
+                end)
+                
+                table.insert(ESPConnections, connection)
+            end
+            
+            createESP()
+        end
+    end
+    
+    -- Handle new players joining
+    local playersConnection = Players.PlayerAdded:Connect(function(player)
+        wait(2) -- Wait for character to load
+        if ESPEnabled then
+            createESP(player)
+        end
+    end)
+    
+    table.insert(ESPConnections, playersConnection)
+end
+
+function DisableESP()
+    for _, connection in pairs(ESPConnections) do
+        if connection.Connected then
+            connection:Disconnect()
+        end
+    end
+    ESPConnections = {}
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character then
+            local esp = player.Character:FindFirstChild("Head"):FindFirstChild("ESP_" .. player.Name)
+            if esp then
+                esp:Destroy()
+            end
+        end
+    end
+end
+
+-- Infinite Jump
+UserInputService.JumpRequest:Connect(function()
+    if InfJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+-- Noclip
+RunService.Stepped:Connect(function()
+    if NoclipEnabled and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- Dragging Functionality
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+
+TitleBar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = false
+    end
+end)
+
+TitleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and isDragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Minimize and Close Functionality
+MinimizeButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MinimizedIcon.Visible = true
+    isMinimized = true
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+MinimizedIcon.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    MinimizedIcon.Visible = false
+    isMinimized = false
+end)
+
+-- Update info periodically
+RunService.Heartbeat:Connect(function()
+    if not isMinimized then
+        UpdateMenuInfo()
+    end
+end)
+
+-- Initialize the UI
+UpdateCategoryButtonColors()
+SwitchCategory("Menu")
+
+-- Function to make all dropdowns close when clicking elsewhere
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local position = UserInputService:GetMouseLocation()
+        if not playerDropdown.Visible or not subplaceDropdown.Visible then return end
+        
+        local isInPlayerDropdown = position.X >= playerDropdown.AbsolutePosition.X and
+                                  position.X <= playerDropdown.AbsolutePosition.X + playerDropdown.AbsoluteSize.X and
+                                  position.Y >= playerDropdown.AbsolutePosition.Y and
+                                  position.Y <= playerDropdown.AbsolutePosition.Y + playerDropdown.AbsoluteSize.Y
+                                  
+        local isInSubplaceDropdown = position.X >= subplaceDropdown.AbsolutePosition.X and
+                                    position.X <= subplaceDropdown.AbsolutePosition.X + subplaceDropdown.AbsoluteSize.X and
+                                    position.Y >= subplaceDropdown.AbsolutePosition.Y and
+                                    position.Y <= subplaceDropdown.AbsolutePosition.Y + subplaceDropdown.AbsoluteSize.Y
+        
+        if not isInPlayerDropdown and playerDropdown.Visible then
+            playerDropdown.Visible = false
+        end
+        
+        if not isInSubplaceDropdown and subplaceDropdown.Visible then
+            subplaceDropdown.Visible = false
+        end
+    end
+end)
+
+-- Return a cleanup function
+local function cleanup()
+    DisableESP()
+    RunService:UnbindFromRenderStep("NoClip")
+    ScreenGui:Destroy()
+end
+
+return cleanup
